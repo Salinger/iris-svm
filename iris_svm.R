@@ -6,6 +6,17 @@ head(iris)
 nrow(iris)
 summary(iris)
 
+# default parameter
+classifier.default <- ksvm(
+    Species ~., # Define Label
+    data=iris,
+    type="C-svc",
+    kernel="rbfdot",
+    cross=nrow(iris) # LOOCV
+    )
+acc.default <- 1 - cross(classifier.default)
+print(acc.default)
+
 # Get SVM accuracy by args
 # (Cost param, Sigma param)
 svm.getacc <- function(c,sig){
@@ -24,14 +35,13 @@ svm.getacc <- function(c,sig){
     return(ret)
 }
 
+# Grid search
 svm.gridsearch <- function(seq.c = -5:15,seq.sigma = -15:3){
     vec <- numeric(0)
-    params.c <- 2^seq.c
-    params.sigma <- 2^seq.sigma
     # Try All C and sigma combination
-    for(c in params.c){
-        for(sigma in params.sigma){
-            vec <- c(vec, svm.getacc(c,sigma))         
+    for(c in 2^seq.c){
+        for(sigma in 2^seq.sigma){
+            vec <- c(vec, svm.getacc(c,sigma))
         }
     }
     m <- t(matrix(vec,nrow=3))
@@ -42,18 +52,22 @@ svm.gridsearch <- function(seq.c = -5:15,seq.sigma = -15:3){
 }
 
 grid <- svm.gridsearch()
-write.table(m,file="girdsearch.csv",row.names=F)
+summary(grid)
+write.table(grid,file="girdsearch.csv",row.names=F)
 
 # acc = 0.5 ~ 1
-g = ggplot(grid,aes_string(x="c",y="sigma",z="acc")) + geom_tile(aes(fill=grid$acc)) + scale_x_continuous(trans="log2") + scale_y_continuous(trans="log2") + scale_fill_continuous(limits=c(0.5, 1), breaks=seq(0,1,by=0.1))
+g = ggplot(grid,aes_string(x="c",y="sigma",z="acc")) + geom_tile(aes(fill=acc)) + scale_x_continuous(trans="log2") + scale_y_continuous(trans="log2") + scale_fill_continuous(limits=c(0.5, 1), breaks=seq(0,1,by=0.1))
 print(g)
 browser()
 
 # acc = 0.9 ~ 1
-g = ggplot(grid,aes_string(x="c",y="sigma",z="acc")) + geom_tile(aes(fill=grid$acc)) + scale_x_continuous(trans="log2") + scale_y_continuous(trans="log2") + scale_fill_continuous(limits=c(0.9, 1), breaks=seq(0,1,by=0.01))
+g = ggplot(grid,aes_string(x="c",y="sigma",z="acc")) + geom_tile(aes(fill=acc)) + scale_x_continuous(trans="log2") + scale_y_continuous(trans="log2") + scale_fill_continuous(limits=c(0.9, 1), breaks=seq(0,1,by=0.01))
 print(g)
 browser()
 
 # acc = 0.95 ~ 1
-g = ggplot(grid,aes_string(x="c",y="sigma",z="acc")) + geom_tile(aes(fill=grid$acc)) + scale_x_continuous(trans="log2") + scale_y_continuous(trans="log2") + scale_fill_continuous(limits=c(0.95, 1), breaks=seq(0,1,by=0.01))
+g = ggplot(grid,aes_string(x="c",y="sigma",z="acc")) + geom_tile(aes(fill=acc)) + scale_x_continuous(trans="log2") + scale_y_continuous(trans="log2") + scale_fill_continuous(limits=c(0.95, 1), breaks=seq(0,1,by=0.01))
 print(g)
+
+grid.subset = subset(grid,grid$acc == max(grid$acc))
+print(grid.subset)
